@@ -110,7 +110,7 @@ module Engine {
         update(ticks: number) {
             super.update(ticks);
 
-            var delta = this.speed / ticks;
+            var delta = ticks / (100 - this.speed);
             if (this.targetPosition) {
                 this.position.x = this.calculateStep(this.position.x, this.targetPosition.x, delta);
                 this.position.y = this.calculateStep(this.position.y, this.targetPosition.y, delta);
@@ -140,11 +140,14 @@ module Engine {
     export class Scenario implements IScenario {
 
         public things: IThing[];
+        public keyLister: (ev: KeyboardEvent) => void;
         private graphics: CanvasRenderingContext2D;
+        private canvas: HTMLCanvasElement;
         private lastTime: number;
         private interval: number;
 
         constructor(canvas: HTMLCanvasElement) {
+            this.canvas = canvas;
             this.graphics = canvas.getContext('2d');
             this.things = [];
         }
@@ -178,7 +181,7 @@ module Engine {
             else {
 
                 this.graphics.fillStyle = '#fff';
-                this.graphics.fillRect(0, 0, 950, 500);
+                this.graphics.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
                 this.things.forEach(thing => {
                     thing.update(ticks);

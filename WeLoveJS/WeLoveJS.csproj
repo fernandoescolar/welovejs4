@@ -23,17 +23,23 @@
     <TypeScriptToolsVersion>1.0</TypeScriptToolsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="images\enemy.40x30.png" />
+    <Content Include="images\explosion.png" />
+    <Content Include="images\farback.gif" />
+    <Content Include="images\shot.png" />
+    <Content Include="images\starfield.png" />
+    <Content Include="shooter.htm" />
     <Content Include="default.htm" />
-    <Content Include="app.js">
-      <DependentUpon>app.ts</DependentUpon>
-    </Content>
     <Content Include="definitions\require.d.ts" />
     <Content Include="images\coffeescript_logo.png" />
     <Content Include="images\dart.png" />
     <Content Include="images\programandonet-logo.png" />
+    <Content Include="images\Ship.64x29.png" />
     <Content Include="images\typescript.png" />
     <Content Include="images\welovejs.png" />
     <Content Include="require.js" />
+    <TypeScriptCompile Include="app-shooter.ts" />
+    <TypeScriptCompile Include="Shooter.ts" />
     <TypeScriptCompile Include="HarlemShake.ts" />
     <TypeScriptCompile Include="Engine.ts" />
   </ItemGroup>

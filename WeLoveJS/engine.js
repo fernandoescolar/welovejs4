@@ -76,7 +76,7 @@ var Engine;
         AnimatedThing.prototype.update = function (ticks) {
             _super.prototype.update.call(this, ticks);
 
-            var delta = this.speed / ticks;
+            var delta = ticks / (100 - this.speed);
             if (this.targetPosition) {
                 this.position.x = this.calculateStep(this.position.x, this.targetPosition.x, delta);
                 this.position.y = this.calculateStep(this.position.y, this.targetPosition.y, delta);
@@ -113,6 +113,7 @@ var Engine;
 
     var Scenario = (function () {
         function Scenario(canvas) {
+            this.canvas = canvas;
             this.graphics = canvas.getContext('2d');
             this.things = [];
         }
@@ -145,7 +146,7 @@ var Engine;
                 this.update(m);
             } else {
                 this.graphics.fillStyle = '#fff';
-                this.graphics.fillRect(0, 0, 950, 500);
+                this.graphics.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
                 this.things.forEach(function (thing) {
                     thing.update(ticks);
@@ -157,4 +158,4 @@ var Engine;
     })();
     Engine.Scenario = Scenario;
 })(Engine || (Engine = {}));
-//# sourceMappingURL=engine.js.map
+//# sourceMappingURL=Engine.js.map

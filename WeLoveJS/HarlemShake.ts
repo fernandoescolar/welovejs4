@@ -21,7 +21,7 @@ class HarlemScenario extends Engine.Scenario {
         shaker.position.y = y || Math.random() * 150;
         shaker.size.width = 42;
         shaker.size.height = 42;
-        shaker.speed = Math.random() * 30 + 10;
+        shaker.speed = Math.random() * 80 + 20;
 
         this.things.push(shaker);
     }
