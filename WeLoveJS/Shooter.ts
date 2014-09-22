@@ -1,8 +1,9 @@
 ///<reference path='Engine.ts'/>
 
 class ShooterScenario extends Engine.Scenario { 
+    private pad: Pad;
     private player: Engine.ISolidAnimatedThing;
-    private shoots: Engine.ISolidAnimatedThing[];
+    private shots: Engine.ISolidAnimatedThing[];
     private enemies: Engine.ISolidAnimatedThing[];
     private explosions: Engine.ISolidAnimatedThing[];
     private exSound: HTMLAudioElement;
@@ -11,38 +12,21 @@ class ShooterScenario extends Engine.Scenario {
     start(framesPerSecond: number) : void { 
         super.start(framesPerSecond);
 
+        this.pad = new Pad();
+        this.pad.onfire = () => { this.shot(); };
+
         this.shSound = <HTMLAudioElement>document.getElementById('laser');
         this.exSound = <HTMLAudioElement>document.getElementById('explosion');
 
-        this.shoots = [];
+        this.shots = [];
         this.enemies = [];
         this.explosions = [];
         this.createBackground('images/farback.gif', 950, 600, 30);
         this.createBackground('images/starfield.png', 950, 600, 50);
         this.player = this.createPlayer('images/Ship.64x29.png', 10, 10, 64, 29);
 
-        document.addEventListener('keydown', (ev: KeyboardEvent) => { this.getKey(ev); }, true);
+        
         setTimeout(() => { this.createEnemy('images/enemy.40x30.png', Math.random() * 900, 40, 30); }, Math.random() * 2000);
-    }
-
-    getKey(ev: KeyboardEvent) {
-        if (ev.keyCode == 38) {
-            this.player.move(new Engine.Point(this.player.position.x, this.player.position.y - 30));
-        }
-        else if (ev.keyCode == 40) {
-            this.player.move(new Engine.Point(this.player.position.x, this.player.position.y + 30));
-        }
-        else if (ev.keyCode == 39) {
-            this.player.move(new Engine.Point(this.player.position.x + 30, this.player.position.y));
-        }
-        else if (ev.keyCode == 37) {
-            this.player.move(new Engine.Point(this.player.position.x - 30, this.player.position.y));
-        }
-        else if (ev.keyCode == 32) {
-            this.shot();
-        }
-
-        return false;
     }
 
     createBackground(imgSource: string, w: number, h: number, s: number): Engine.IThing {
@@ -63,7 +47,7 @@ class ShooterScenario extends Engine.Scenario {
         sprite.position.y = y || Math.random() * 150;
         sprite.size.width = w || 42;
         sprite.size.height = h || 42;
-        sprite.speed = 90;
+        sprite.speed = 95;
 
         this.things.push(sprite);
         return sprite;
@@ -77,7 +61,7 @@ class ShooterScenario extends Engine.Scenario {
         sprite.position.y = y;
         sprite.size.width = w;
         sprite.size.height = h;
-        sprite.speed = 50;
+        sprite.speed = Math.random() * 50 + 40;
 
         this.enemies.push(sprite);
         this.things.push(sprite);
@@ -86,16 +70,19 @@ class ShooterScenario extends Engine.Scenario {
 
     shot() : void {
         var sprite = new Sprite('player', 'images/shot.png', 4);
-        sprite.position.x = this.player.position.x + 30;
-        sprite.position.y = this.player.position.y + 3;
+        sprite.position.x = this.player.position.x + 60;
+        sprite.position.y = this.player.position.y + 7;
         sprite.size.width = 16;
         sprite.size.height = 16;
         sprite.speed = 100;
 
-        this.shoots.push(sprite);
+        this.shots.push(sprite);
         this.things.push(sprite);
-        this.shSound.currentTime = 0;
-        this.shSound.play();
+
+        try {
+            this.shSound.currentTime = 0;
+            this.shSound.play();
+        }catch(ex) { }
     }
 
     explote(x: number, y: number) {
@@ -109,37 +96,41 @@ class ShooterScenario extends Engine.Scenario {
 
         this.explosions.push(sprite);
         this.things.push(sprite);
-        this.exSound.currentTime = 0;
-        this.exSound.play();
+
+        try {
+            this.exSound.currentTime = 0;        
+            this.exSound.play();
+        } catch (ex) { }
     }
 
     update(): void;
     update(ticks: number): void;
     update(ticks?: any): void {
         this.updateGame();
+        this.updatePlayer();
         super.update(ticks);
     }
 
     updateGame(): void {
         var toDelete: Engine.ISolidAnimatedThing[] = [];
 
-        this.shoots.forEach(shoot => {
-            shoot.move(new Engine.Point(shoot.position.x + 30, shoot.position.y));
-            if (shoot.position.x >= 950) {
-                toDelete.push(shoot);
+        this.shots.forEach(shot => {
+            shot.move(new Engine.Point(shot.position.x + 30, shot.position.y));
+            if (shot.position.x >= 950) {
+                toDelete.push(shot);
             }
         });
 
-        toDelete.forEach(shoot => {
-            var index: number = this.shoots.indexOf(shoot);
-            var indez: number = this.things.indexOf(shoot);
-            this.shoots.splice(index, 1);
+        toDelete.forEach(shot => {
+            var index: number = this.shots.indexOf(shot);
+            var indez: number = this.things.indexOf(shot);
+            this.shots.splice(index, 1);
             this.things.splice(indez, 1);
         });
 
         toDelete = [];
         this.enemies.forEach(enemy => {
-            enemy.move(new Engine.Point(enemy.position.x - Math.random() * 25, enemy.position.y));
+            enemy.move(new Engine.Point(enemy.position.x - Math.random() * 40, enemy.position.y));
             if (enemy.position.x <= -20) {
                 toDelete.push(enemy);
             }
@@ -167,12 +158,12 @@ class ShooterScenario extends Engine.Scenario {
             this.things.splice(indez, 1);
         });
 
-        this.shoots.forEach(shoot => {
+        this.shots.forEach(shot => {
             this.enemies.forEach(enemy => {
-                if (shoot.collision(enemy)) {
-                    var sindex: number = this.shoots.indexOf(shoot);
-                    var sindez: number = this.things.indexOf(shoot);
-                    this.shoots.splice(sindex, 1);
+                if (shot.collision(enemy)) {
+                    var sindex: number = this.shots.indexOf(shot);
+                    var sindez: number = this.things.indexOf(shot);
+                    this.shots.splice(sindex, 1);
                     this.things.splice(sindez, 1);
 
                     var eindex: number = this.enemies.indexOf(enemy);
@@ -184,6 +175,27 @@ class ShooterScenario extends Engine.Scenario {
                 }
             });
         });
+    }
+    updatePlayer() {
+        var x: number = this.player.position.x;
+        var y: number = this.player.position.y;
+        if (this.pad.up) {
+            y -= 30;
+        }
+
+        if (this.pad.down) {
+            y += 30;
+        }
+
+        if (this.pad.rigth) {
+            x += 30;
+        }
+
+        if (this.pad.left) {
+            x -= 30;
+        }
+
+        this.player.move(new Engine.Point(x, y));
     }
 }
 
@@ -300,4 +312,74 @@ class Sprite extends Engine.SolidAnimatedThing {
             this.size.width,
             this.size.height);
     }
+}
+
+class Pad {
+    public up: boolean;
+    public down: boolean;
+    public left: boolean;
+    public rigth: boolean;
+    public space: boolean;
+    public onfire: () => void;
+
+    constructor() {
+        document.addEventListener('keydown', (ev: KeyboardEvent) => { this.onKeyDown(ev); }, true);
+        document.addEventListener('keyup', (ev: KeyboardEvent) => { this.onKeyUp(ev); }, true);
+
+        this.up = false;
+        this.down = false;
+        this.left = false;
+        this.rigth = false;
+        this.space = false;
+    }
+
+    onKeyDown(ev: KeyboardEvent) {
+        ev.preventDefault();
+
+        if (ev.keyCode == 38) {
+            this.up = true;
+        }
+        else if (ev.keyCode == 40) {
+            this.down = true;
+        }
+        else if (ev.keyCode == 39) {
+            this.rigth = true;
+        }
+        else if (ev.keyCode == 37) {
+            this.left = true;
+        }
+        else if (ev.keyCode == 32) {
+            if (!this.space) {
+                if (this.onfire) {
+                    this.onfire();
+                }
+            }
+            this.space = true;
+        }
+
+        return false;
+    }
+
+    onKeyUp(ev: KeyboardEvent) {
+        ev.preventDefault();
+
+        if (ev.keyCode == 38) {
+            this.up = false;
+        }
+        else if (ev.keyCode == 40) {
+            this.down = false;
+        }
+        else if (ev.keyCode == 39) {
+            this.rigth = false;
+        }
+        else if (ev.keyCode == 37) {
+            this.left = false;
+        }
+        else if (ev.keyCode == 32) {
+            this.space = false;
+        }
+
+        return false;
+    }
+
 }

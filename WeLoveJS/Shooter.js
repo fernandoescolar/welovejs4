@@ -14,38 +14,24 @@ var ShooterScenario = (function (_super) {
         var _this = this;
         _super.prototype.start.call(this, framesPerSecond);
 
+        this.pad = new Pad();
+        this.pad.onfire = function () {
+            _this.shot();
+        };
+
         this.shSound = document.getElementById('laser');
         this.exSound = document.getElementById('explosion');
 
-        this.shoots = [];
+        this.shots = [];
         this.enemies = [];
         this.explosions = [];
         this.createBackground('images/farback.gif', 950, 600, 30);
         this.createBackground('images/starfield.png', 950, 600, 50);
         this.player = this.createPlayer('images/Ship.64x29.png', 10, 10, 64, 29);
 
-        document.addEventListener('keydown', function (ev) {
-            _this.getKey(ev);
-        }, true);
         setTimeout(function () {
             _this.createEnemy('images/enemy.40x30.png', Math.random() * 900, 40, 30);
         }, Math.random() * 2000);
-    };
-
-    ShooterScenario.prototype.getKey = function (ev) {
-        if (ev.keyCode == 38) {
-            this.player.move(new Engine.Point(this.player.position.x, this.player.position.y - 30));
-        } else if (ev.keyCode == 40) {
-            this.player.move(new Engine.Point(this.player.position.x, this.player.position.y + 30));
-        } else if (ev.keyCode == 39) {
-            this.player.move(new Engine.Point(this.player.position.x + 30, this.player.position.y));
-        } else if (ev.keyCode == 37) {
-            this.player.move(new Engine.Point(this.player.position.x - 30, this.player.position.y));
-        } else if (ev.keyCode == 32) {
-            this.shot();
-        }
-
-        return false;
     };
 
     ShooterScenario.prototype.createBackground = function (imgSource, w, h, s) {
@@ -66,7 +52,7 @@ var ShooterScenario = (function (_super) {
         sprite.position.y = y || Math.random() * 150;
         sprite.size.width = w || 42;
         sprite.size.height = h || 42;
-        sprite.speed = 90;
+        sprite.speed = 95;
 
         this.things.push(sprite);
         return sprite;
@@ -83,7 +69,7 @@ var ShooterScenario = (function (_super) {
         sprite.position.y = y;
         sprite.size.width = w;
         sprite.size.height = h;
-        sprite.speed = 50;
+        sprite.speed = Math.random() * 50 + 40;
 
         this.enemies.push(sprite);
         this.things.push(sprite);
@@ -92,16 +78,20 @@ var ShooterScenario = (function (_super) {
 
     ShooterScenario.prototype.shot = function () {
         var sprite = new Sprite('player', 'images/shot.png', 4);
-        sprite.position.x = this.player.position.x + 30;
-        sprite.position.y = this.player.position.y + 3;
+        sprite.position.x = this.player.position.x + 60;
+        sprite.position.y = this.player.position.y + 7;
         sprite.size.width = 16;
         sprite.size.height = 16;
         sprite.speed = 100;
 
-        this.shoots.push(sprite);
+        this.shots.push(sprite);
         this.things.push(sprite);
-        this.shSound.currentTime = 0;
-        this.shSound.play();
+
+        try  {
+            this.shSound.currentTime = 0;
+            this.shSound.play();
+        } catch (ex) {
+        }
     };
 
     ShooterScenario.prototype.explote = function (x, y) {
@@ -115,12 +105,17 @@ var ShooterScenario = (function (_super) {
 
         this.explosions.push(sprite);
         this.things.push(sprite);
-        this.exSound.currentTime = 0;
-        this.exSound.play();
+
+        try  {
+            this.exSound.currentTime = 0;
+            this.exSound.play();
+        } catch (ex) {
+        }
     };
 
     ShooterScenario.prototype.update = function (ticks) {
         this.updateGame();
+        this.updatePlayer();
         _super.prototype.update.call(this, ticks);
     };
 
@@ -128,23 +123,23 @@ var ShooterScenario = (function (_super) {
         var _this = this;
         var toDelete = [];
 
-        this.shoots.forEach(function (shoot) {
-            shoot.move(new Engine.Point(shoot.position.x + 30, shoot.position.y));
-            if (shoot.position.x >= 950) {
-                toDelete.push(shoot);
+        this.shots.forEach(function (shot) {
+            shot.move(new Engine.Point(shot.position.x + 30, shot.position.y));
+            if (shot.position.x >= 950) {
+                toDelete.push(shot);
             }
         });
 
-        toDelete.forEach(function (shoot) {
-            var index = _this.shoots.indexOf(shoot);
-            var indez = _this.things.indexOf(shoot);
-            _this.shoots.splice(index, 1);
+        toDelete.forEach(function (shot) {
+            var index = _this.shots.indexOf(shot);
+            var indez = _this.things.indexOf(shot);
+            _this.shots.splice(index, 1);
             _this.things.splice(indez, 1);
         });
 
         toDelete = [];
         this.enemies.forEach(function (enemy) {
-            enemy.move(new Engine.Point(enemy.position.x - Math.random() * 25, enemy.position.y));
+            enemy.move(new Engine.Point(enemy.position.x - Math.random() * 40, enemy.position.y));
             if (enemy.position.x <= -20) {
                 toDelete.push(enemy);
             }
@@ -172,12 +167,12 @@ var ShooterScenario = (function (_super) {
             _this.things.splice(indez, 1);
         });
 
-        this.shoots.forEach(function (shoot) {
+        this.shots.forEach(function (shot) {
             _this.enemies.forEach(function (enemy) {
-                if (shoot.collision(enemy)) {
-                    var sindex = _this.shoots.indexOf(shoot);
-                    var sindez = _this.things.indexOf(shoot);
-                    _this.shoots.splice(sindex, 1);
+                if (shot.collision(enemy)) {
+                    var sindex = _this.shots.indexOf(shot);
+                    var sindez = _this.things.indexOf(shot);
+                    _this.shots.splice(sindex, 1);
                     _this.things.splice(sindez, 1);
 
                     var eindex = _this.enemies.indexOf(enemy);
@@ -189,6 +184,27 @@ var ShooterScenario = (function (_super) {
                 }
             });
         });
+    };
+    ShooterScenario.prototype.updatePlayer = function () {
+        var x = this.player.position.x;
+        var y = this.player.position.y;
+        if (this.pad.up) {
+            y -= 30;
+        }
+
+        if (this.pad.down) {
+            y += 30;
+        }
+
+        if (this.pad.rigth) {
+            x += 30;
+        }
+
+        if (this.pad.left) {
+            x -= 30;
+        }
+
+        this.player.move(new Engine.Point(x, y));
     };
     return ShooterScenario;
 })(Engine.Scenario);
@@ -264,4 +280,63 @@ var Sprite = (function (_super) {
     };
     return Sprite;
 })(Engine.SolidAnimatedThing);
+
+var Pad = (function () {
+    function Pad() {
+        var _this = this;
+        document.addEventListener('keydown', function (ev) {
+            _this.onKeyDown(ev);
+        }, true);
+        document.addEventListener('keyup', function (ev) {
+            _this.onKeyUp(ev);
+        }, true);
+
+        this.up = false;
+        this.down = false;
+        this.left = false;
+        this.rigth = false;
+        this.space = false;
+    }
+    Pad.prototype.onKeyDown = function (ev) {
+        ev.preventDefault();
+
+        if (ev.keyCode == 38) {
+            this.up = true;
+        } else if (ev.keyCode == 40) {
+            this.down = true;
+        } else if (ev.keyCode == 39) {
+            this.rigth = true;
+        } else if (ev.keyCode == 37) {
+            this.left = true;
+        } else if (ev.keyCode == 32) {
+            if (!this.space) {
+                if (this.onfire) {
+                    this.onfire();
+                }
+            }
+            this.space = true;
+        }
+
+        return false;
+    };
+
+    Pad.prototype.onKeyUp = function (ev) {
+        ev.preventDefault();
+
+        if (ev.keyCode == 38) {
+            this.up = false;
+        } else if (ev.keyCode == 40) {
+            this.down = false;
+        } else if (ev.keyCode == 39) {
+            this.rigth = false;
+        } else if (ev.keyCode == 37) {
+            this.left = false;
+        } else if (ev.keyCode == 32) {
+            this.space = false;
+        }
+
+        return false;
+    };
+    return Pad;
+})();
 //# sourceMappingURL=Shooter.js.map
