@@ -1,10 +1,9 @@
-define(["require", "exports", 'HarlemShake'], function(require, exports, __Harlem__) {
-    var Harlem = __Harlem__;
+///<reference path='definitions/require.d.ts'/>
+///<reference path='HarlemShake.ts'/>
+require(['Engine', 'HarlemShake'], function () {
+    var canvas = document.getElementById('content');
+    var harlem = new HarlemScenario(canvas);
 
-    require([], function () {
-        var canvas = document.getElementById('content');
-        var harlem = new Harlem.HarlemScenario(canvas);
-        harlem.start(60);
-    });
-})
-//@ sourceMappingURL=app.js.map
+    harlem.start(60);
+});
+//# sourceMappingURL=app.js.map

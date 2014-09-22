@@ -1,8 +1,6 @@
-///<reference path='engine.ts'/>
+///<reference path='Engine.ts'/>
 
-export import Engine = module("engine");
-
-export class HarlemScenario extends Engine.Scenario { 
+class HarlemScenario extends Engine.Scenario { 
     start(framesPerSecond: number) : void { 
         super.start(framesPerSecond);
 
@@ -29,10 +27,10 @@ export class HarlemScenario extends Engine.Scenario {
     }
 }
 
-export class HarlemLittleShaker extends Engine.AnimatedThing { 
+class HarlemLittleShaker extends Engine.AnimatedThing { 
 
     private image: HTMLImageElement;
-    private isGrowing: bool;
+    private isGrowing: boolean;
 
     constructor(id: string, imageSource: string) { 
         super(id);
