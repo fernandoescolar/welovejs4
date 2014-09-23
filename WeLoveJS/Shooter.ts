@@ -2,74 +2,96 @@
 
 class ShooterScenario extends Engine.Scenario { 
     private pad: Pad;
-    private player: Engine.ISolidAnimatedThing;
-    private shots: Engine.ISolidAnimatedThing[];
-    private enemies: Engine.ISolidAnimatedThing[];
-    private explosions: Engine.ISolidAnimatedThing[];
-    private exSound: HTMLAudioElement;
-    private shSound: HTMLAudioElement;
+    private player: Engine.ISolidScalableMovableThing;
+    private shots: Array<Engine.ISolidScalableMovableThing>;
+    private enemies: Array<Engine.ISolidScalableMovableThing>;
+    private explosions: Array<Engine.ISolidScalableMovableThing>;
+    private enemyCounter: number;
+
+    constructor(canvas: HTMLCanvasElement) {
+        super(canvas);
+
+        this.pad = new Pad();
+        this.pad.onfire = () => { this.shoot(); };
+
+        this.resources.loadImage('background', 'images/farback.gif');
+        this.resources.loadImage('background-paralax', 'images/starfield.png');
+        this.resources.loadImage('player', 'images/Ship.64x29.png');
+        this.resources.loadImage('enemy', 'images/enemy.40x30.png');
+        this.resources.loadImage('shot', 'images/shot.png');
+        this.resources.loadImage('explosion', 'images/explosion.png');
+
+        this.resources.loadAudio('background-music', 'sound/spankmonkey.mp3');
+        this.resources.loadAudio('laser', 'sound/laser.mp3');
+        this.resources.loadAudio('explosion', 'sound/explosion.mp3');
+
+        this.resources.preload(() => { this.start(60); });
+    }
 
     start(framesPerSecond: number) : void { 
         super.start(framesPerSecond);
 
-        this.pad = new Pad();
-        this.pad.onfire = () => { this.shot(); };
-
-        this.shSound = <HTMLAudioElement>document.getElementById('laser');
-        this.exSound = <HTMLAudioElement>document.getElementById('explosion');
-
+        this.things = [];
         this.shots = [];
         this.enemies = [];
         this.explosions = [];
-        this.createBackground('images/farback.gif', 950, 600, 30);
-        this.createBackground('images/starfield.png', 950, 600, 50);
-        this.player = this.createPlayer('images/Ship.64x29.png', 10, 10, 64, 29);
+        this.enemyCounter = 0;
 
+        this.createBackground('background', 30);
+        this.createBackground('background-paralax', 50);
+        this.player = this.createPlayer(10, 10);
         
-        setTimeout(() => { this.createEnemy('images/enemy.40x30.png', Math.random() * 900, 40, 30); }, Math.random() * 2000);
+        this.resources.playAudio('background-music');
+
+        setTimeout(() => { this.createEnemy(); }, Math.random() * 2000);
     }
 
-    createBackground(imgSource: string, w: number, h: number, s: number): Engine.IThing {
-        var background = new Background('background', imgSource);
-        background.position.x = 0;
-        background.position.y = 0;
-        background.size.width = w ;
-        background.size.height = h;
-        background.speed = s;
+    createBackground(imgName: string, speed: number): void {
+        var animation = new Engine.ContinuousImageAnimation(imgName, this.resources.images.get(imgName));
+        var sprite = new Engine.Sprite(imgName, animation);
+        sprite.position.x = 0;
+        sprite.position.y = 0;
+        sprite.size.width = 950 ;
+        sprite.size.height = 600;
+        animation.speed = speed;
 
-        this.things.push(background);
-        return background;
+        this.things.push(sprite);
     }
 
-    createPlayer(imgSource: string, x?: number, y?: number, w?: number, h?: number): Engine.ISolidAnimatedThing { 
-        var sprite = new Sprite('player', imgSource, 4);
-        sprite.position.x = x || Math.random() * 400;
-        sprite.position.y = y || Math.random() * 150;
-        sprite.size.width = w || 42;
-        sprite.size.height = h || 42;
+    createPlayer(x?: number, y?: number): Engine.ISprite { 
+        var animation = new Engine.ImageSheetAnimation('player', this.resources.images.get('player'), 4, true, true);
+        var sprite = new Engine.Sprite('player', animation);
+        sprite.position.x = x || Math.random() * 900;
+        sprite.position.y = y || Math.random() * 550;
+        sprite.size.width = 64;
+        sprite.size.height = 29;
         sprite.speed = 95;
+        animation.speed = 10;
 
         this.things.push(sprite);
         return sprite;
     }
 
-    createEnemy(imgSource: string, y: number, w: number, h: number) {
-        setTimeout(() => { this.createEnemy('images/enemy.40x30.png', Math.random() * 550, 40, 30); }, Math.random() * 2000);
+    createEnemy() {
+        setTimeout(() => { this.createEnemy(); }, Math.random() * 3000);
 
-        var sprite = new Sprite('enemy', imgSource, 6);
+        var animation = new Engine.ImageSheetAnimation('enemy', this.resources.images.get('enemy'), 6, true, true);
+        var sprite = new Engine.Sprite('enemy-' + this.enemyCounter, animation);
         sprite.position.x = 950 + Math.random() * 40;
-        sprite.position.y = y;
-        sprite.size.width = w;
-        sprite.size.height = h;
+        sprite.position.y = Math.random() * 500;
+        sprite.size.width = 40;
+        sprite.size.height = 30;
         sprite.speed = Math.random() * 50 + 40;
+        animation.speed = sprite.speed;
 
         this.enemies.push(sprite);
         this.things.push(sprite);
         return sprite;
     }
 
-    shot() : void {
-        var sprite = new Sprite('player', 'images/shot.png', 4);
+    shoot(): void {
+        var animation = new Engine.ImageSheetAnimation('shot', this.resources.images.get('shot'), 4, true, true);
+        var sprite = new Engine.Sprite('shot', animation);
         sprite.position.x = this.player.position.x + 60;
         sprite.position.y = this.player.position.y + 7;
         sprite.size.width = 16;
@@ -79,40 +101,42 @@ class ShooterScenario extends Engine.Scenario {
         this.shots.push(sprite);
         this.things.push(sprite);
 
-        try {
-            this.shSound.currentTime = 0;
-            this.shSound.play();
-        }catch(ex) { }
+        this.resources.playAudio('laser');
     }
 
     explote(x: number, y: number) {
-        var sprite = new Sprite('explosion', 'images/explosion.png', 64);
+        var animation = new Engine.ImageSheetAnimation('explosion', this.resources.images.get('explosion'), 64, false, true);
+        var sprite = new Engine.Sprite('explosion', animation);
         sprite.position.x = x;
         sprite.position.y = y;
         sprite.size.width = 60;
         sprite.size.height = 60;
-        sprite.speed = 80;
-        sprite.loop = false;
+        animation.speed = 80;
 
         this.explosions.push(sprite);
         this.things.push(sprite);
 
-        try {
-            this.exSound.currentTime = 0;        
-            this.exSound.play();
-        } catch (ex) { }
+        this.resources.playAudio('explosion');
     }
 
     update(): void;
     update(ticks: number): void;
     update(ticks?: any): void {
         this.updateGame();
-        this.updatePlayer();
         super.update(ticks);
     }
 
     updateGame(): void {
-        var toDelete: Engine.ISolidAnimatedThing[] = [];
+
+        this.updateShots();
+        this.updateEnemies();
+        this.updateExplosions();
+        this.updateCollisions();
+        this.updatePlayer();
+    }
+
+    updateShots(): void {
+        var toDelete: Array<Engine.ISolidScalableMovableThing> = [];
 
         this.shots.forEach(shot => {
             shot.move(new Engine.Point(shot.position.x + 30, shot.position.y));
@@ -127,8 +151,29 @@ class ShooterScenario extends Engine.Scenario {
             this.shots.splice(index, 1);
             this.things.splice(indez, 1);
         });
+    }
 
-        toDelete = [];
+    updateExplosions(): void {
+        var toDelete: Array<Engine.ISolidScalableMovableThing> = [];
+
+        this.explosions.forEach(explosion => {
+            var sprite = <Engine.Sprite>explosion;
+            var animation = <Engine.ImageSheetAnimation>sprite.currentAnimation;
+            if (animation.hasEnd) {
+                toDelete.push(explosion);
+            }
+        });
+
+        toDelete.forEach(explosion => {
+            var index: number = this.explosions.indexOf(explosion);
+            var indez: number = this.things.indexOf(explosion);
+            this.explosions.splice(index, 1);
+            this.things.splice(indez, 1);
+        });
+    }
+
+    updateEnemies(): void {
+        var toDelete: Array<Engine.ISolidScalableMovableThing> = [];
         this.enemies.forEach(enemy => {
             enemy.move(new Engine.Point(enemy.position.x - Math.random() * 40, enemy.position.y));
             if (enemy.position.x <= -20) {
@@ -142,22 +187,9 @@ class ShooterScenario extends Engine.Scenario {
             this.enemies.splice(index, 1);
             this.things.splice(indez, 1);
         });
+    }
 
-        toDelete = [];
-        this.explosions.forEach(explosion => {
-            var sprite = <Sprite>explosion;
-            if (sprite.hasEnd) {
-                toDelete.push(explosion);
-            }
-        });
-
-        toDelete.forEach(explosion => {
-            var index: number = this.explosions.indexOf(explosion);
-            var indez: number = this.things.indexOf(explosion);
-            this.explosions.splice(index, 1);
-            this.things.splice(indez, 1);
-        });
-
+    updateCollisions(): void {
         this.shots.forEach(shot => {
             this.enemies.forEach(enemy => {
                 if (shot.collision(enemy)) {
@@ -176,7 +208,8 @@ class ShooterScenario extends Engine.Scenario {
             });
         });
     }
-    updatePlayer() {
+
+    updatePlayer() : void {
         var x: number = this.player.position.x;
         var y: number = this.player.position.y;
         if (this.pad.up) {
@@ -196,121 +229,6 @@ class ShooterScenario extends Engine.Scenario {
         }
 
         this.player.move(new Engine.Point(x, y));
-    }
-}
-
-class Background extends Engine.Thing {
-    private image: HTMLImageElement;
-    public speed: number;
-
-    constructor(id: string, imageSource: string) {
-        super(id);
-
-        this.image = <HTMLImageElement>document.createElement("img");
-        this.image.src = imageSource;
-        this.speed = 10;
-    }
-
-    update(ticks: number) {
-        super.update(ticks);
-
-        var delta = ticks / (100 - this.speed);
-        this.position.x += delta;
-        if (this.position.x > this.image.width) {
-            this.position.x = 0;
-        }
-    }
-
-    draw(graphics: CanvasRenderingContext2D) {
-        super.draw(graphics);
-
-        if ((this.image.width - this.position.x) < this.size.width) {
-            var offsetA: number = this.image.width - this.position.x;
-            var offsetB: number = this.size.width - offsetA; 
-            graphics.drawImage(this.image,
-                this.position.x,
-                0,
-                offsetA,
-                this.size.height,
-                0,
-                0,
-                offsetA,
-                this.size.height);
-
-            graphics.drawImage(this.image,
-                0,
-                0,
-                offsetB,
-                this.size.height,
-                offsetA,
-                0,
-                offsetB,
-                this.size.height);
-        }
-        else {
-            graphics.drawImage(this.image,
-                this.position.x,
-                0,
-                this.size.width,
-                this.size.height,
-                0,
-                0,
-                this.size.width,
-                this.size.height);
-        }
-    }
-}
-
-class Sprite extends Engine.SolidAnimatedThing { 
-
-    private image: HTMLImageElement;
-    private frameIndex: number;
-    private frameCount: number;
-    private ticks: number;
-
-    public loop: boolean;
-    public hasEnd: boolean;
-
-    constructor(id: string, imageSource: string, frameCount: number) { 
-        super(id);
-
-        this.image = <HTMLImageElement>document.createElement("img");
-        this.image.src = imageSource;
-        this.frameCount = frameCount;
-        this.frameIndex = 0;
-        this.speed = 10;
-        this.loop = true;
-        this.ticks = 0;
-        this.hasEnd = false;
-    }
-
-    update(ticks: number) { 
-        super.update(ticks);
-        this.ticks += ticks;
-        if (this.ticks / (100 - this.speed) >= 1) {
-            this.ticks = 0;
-            if (this.frameIndex < this.frameCount - 1) {
-                this.frameIndex += 1;
-            } else if (this.loop) {
-                this.frameIndex = 0;
-            } else {
-                this.hasEnd = true;
-            }
-        }
-    }
-
-    draw(graphics: CanvasRenderingContext2D) { 
-        super.draw(graphics);
-
-        graphics.drawImage(this.image,
-            0,
-            this.frameIndex * this.size.height,
-            this.size.width,
-            this.size.height,
-            this.position.x,
-            this.position.y,
-            this.size.width,
-            this.size.height);
     }
 }
 

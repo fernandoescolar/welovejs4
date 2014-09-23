@@ -6,6 +6,5 @@ require(['Engine', 'Shooter'], function () {
     canvas.width = 950;
 
     var shooter = new ShooterScenario(canvas);
-    shooter.start(60);
 });
 //# sourceMappingURL=app-shooter.js.map

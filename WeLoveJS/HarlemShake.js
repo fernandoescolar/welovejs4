@@ -50,8 +50,8 @@ var HarlemLittleShaker = (function (_super) {
         this.speed = 10;
         this.isGrowing = false;
     }
-    HarlemLittleShaker.prototype.update = function (ticks) {
-        _super.prototype.update.call(this, ticks);
+    HarlemLittleShaker.prototype.update = function (context) {
+        _super.prototype.update.call(this, context);
 
         if (this.isGrowing && this.size.width >= 60) {
             this.isGrowing = false;
@@ -70,5 +70,5 @@ var HarlemLittleShaker = (function (_super) {
         graphics.drawImage(this.image, 0, 0, 42, 42, this.position.x, this.position.y, this.size.width, this.size.height);
     };
     return HarlemLittleShaker;
-})(Engine.AnimatedThing);
+})(Engine.ScalableThing);
 //# sourceMappingURL=HarlemShake.js.map

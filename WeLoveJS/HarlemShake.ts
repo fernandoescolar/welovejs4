@@ -27,7 +27,7 @@ class HarlemScenario extends Engine.Scenario {
     }
 }
 
-class HarlemLittleShaker extends Engine.AnimatedThing { 
+class HarlemLittleShaker extends Engine.ScalableThing { 
 
     private image: HTMLImageElement;
     private isGrowing: boolean;
@@ -41,8 +41,8 @@ class HarlemLittleShaker extends Engine.AnimatedThing {
         this.isGrowing = false;
     }
 
-    update(ticks: number) { 
-        super.update(ticks);
+    update(context: Engine.IUpdateContext) { 
+        super.update(context);
 
         if (this.isGrowing && this.size.width >= 60) { 
             this.isGrowing = false;

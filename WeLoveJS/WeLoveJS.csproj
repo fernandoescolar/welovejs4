@@ -93,7 +93,7 @@
   </PropertyGroup>
   <Target Name="BeforeBuild">
     <Message Text="Compiling TypeScript files" />
-    <Message Text="Executing tsc$(TypeScriptSourceMap) @(TypeScriptCompile ->'&quot;%(fullpath)&quot;', ' ')" />
-    <Exec Command="tsc$(TypeScriptSourceMap) -module AMD @(TypeScriptCompile ->'&quot;%(fullpath)&quot;', ' ')" />
+    <Message Text="Executing tsc$(TypeScriptSourceMap) -target ES5 @(TypeScriptCompile ->'&quot;%(fullpath)&quot;', ' ')" />
+    <Exec Command="tsc$(TypeScriptSourceMap) -module AMD -target ES5 @(TypeScriptCompile ->'&quot;%(fullpath)&quot;', ' ')" />
   </Target>
 </Project>
