@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script type="text/javascript">
+
+       
+
+        function getMetrics(ctx, text) {
+            var txtHeight = parseInt(ctx.font);
+            return {
+                width: ctx.measureText(text).width,
+                height: txtHeight,
+                top: 0
+            };
+        }
+        function neonLightEffect(ctx, text, x, y) {
+            var font = "120px Futura, Helvetica, sans-serif";
+            var jitter = 25; // the distance of the maximum jitter
+            var offsetX = 30;
+            var offsetY = 100;
+            var blur = 100;
+            // save state
+            ctx.save();
+            ctx.font = font;
+            // calculate width + height of text-block
+            var metrics = getMetrics(ctx, text);
+            //// create clipping mask around text-effect
+            //ctx.rect(offsetX - blur / 2, offsetY - blur / 2,
+            //         offsetX + metrics.width + blur, metrics.height + blur);
+            //ctx.clip();
+            //// create shadow-blur to mask rainbow onto (since shadowColor doesn't accept gradients)
+            //ctx.save();
+            //ctx.fillStyle = "#fff";
+            //ctx.shadowColor = "rgba(0,0,0,1)";
+            //ctx.shadowOffsetX = metrics.width + blur;
+            //ctx.shadowOffsetY = 0;
+            //ctx.shadowBlur = blur;
+            //ctx.fillText(text, -metrics.width + offsetX - blur, offsetY + metrics.top);
+            //ctx.restore();
+            // draw white-text ontop of glow
+            ctx.fillStyle = "rgba(255,255,255,0.95)";
+            for (var i = 0; i < neonShadows.length; i++) {
+                ctx.shadowColor = neonShadows[i].color;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.shadowBlur = neonShadows[i].blur;
+                ctx.fillText(text, offsetX, offsetY + metrics.top);
+            }
+            
+            // created jittered stroke
+            ctx.lineWidth = 0.80;
+            ctx.strokeStyle = "rgba(255,255,255,0.25)";
+            var i = 2; while (i--) {
+                var left = jitter / 2 - Math.random() * jitter;
+                var top = jitter / 2 - Math.random() * jitter;
+                ctx.strokeText(text, left + offsetX, top + offsetY + metrics.top);
+            }
+            ctx.strokeStyle = "rgba(0,0,0,0.20)";
+            ctx.strokeText(text, offsetX, offsetY + metrics.top);
+            ctx.restore();
+        }
+
+        var neonShadows = [
+            { blur: 10, color: '#fff' },
+            { blur: 20, color: '#fff' },
+            { blur: 30, color: '#fff' },
+            { blur: 40, color: '#ff0000' },
+            { blur: 70, color: '#ff0000' },
+            { blur: 80, color: '#ff0000' },
+            { blur: 100, color: '#ff0000' },
+            { blur: 150, color: '#ff0000' }
+        ];
+        function neonEffect(ctx, text) {
+            var blur = 10;
+            var width = ctx.measureText(text).width + blur * 2;
+            ctx.save();
+            ctx.font = "120px Futura, Helvetica, sans-serif";
+            ctx.fillStyle = "#fff";
+            ctx.textBaseline = "top";
+            for (var i = 0; i < neonShadows.length; i++) {
+                ctx.shadowColor = neonShadows[i].color;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.shadowBlur = neonShadows[i].blur;
+                ctx.fillText(text, 10, 100);
+            }
+
+            ctx.restore();
+        }
+        function neonImage(ctx) {
+            var blur = 10;
+            ctx.save();
+            for (var i = 0; i < neonShadows.length; i++) {
+                ctx.shadowColor = neonShadows[i].color;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.shadowBlur = neonShadows[i].blur;
+                ctx.drawImage(playerImg, 80, 250);
+                
+            }
+
+            ctx.restore();
+        }
+
+        var playerImg = new Image();
+        playerImg.src = "images/Player.png";
+
+        var canvas = document.getElementById("canvas");
+        canvas.width = 800;
+        canvas.height = 600;
+        
+        var context = canvas.getContext('2d');
+        setInterval(function () { 
+            context.fillStyle = '#000';
+            context.fillRect(0, 0, 800, 600);
+            neonLightEffect(context, "Paranoid");
+            neonEffect(context, "hola");
+            neonImage(context);
+        }, 100);
+    </script>
+</body>
+</html>

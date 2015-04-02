@@ -27,7 +27,7 @@ class HarlemScenario extends Engine.Scenario {
     }
 }
 
-class HarlemLittleShaker extends Engine.ScalableThing { 
+class HarlemLittleShaker extends Engine.Sprite { 
 
     private image: HTMLImageElement;
     private isGrowing: boolean;
@@ -55,8 +55,8 @@ class HarlemLittleShaker extends Engine.ScalableThing {
         }
     }
 
-    draw(graphics: CanvasRenderingContext2D) { 
-        super.draw(graphics);
+    draw(graphics: CanvasRenderingContext2D, camera: Engine.ICamera) { 
+        //super.draw(graphics, camera);
 
         graphics.drawImage(this.image, 0, 0, 42, 42, this.position.x, this.position.y, this.size.width, this.size.height);
     }

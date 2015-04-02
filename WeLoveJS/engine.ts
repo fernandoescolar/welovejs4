@@ -38,13 +38,16 @@ module Engine {
         resources: IResources;
     }
 
+    export interface IDrawable {
+        draw(graphics: CanvasRenderingContext2D, camera: ICamera): void;
+    }
+
     export interface IThing {
         id: string;
         position: IPoint;
         size: ISize;
 
         update(context: IUpdateContext): void;
-        draw(graphics: CanvasRenderingContext2D): void;
     }
 
     export interface ISolidThing extends IThing {
@@ -71,14 +74,21 @@ module Engine {
         id: string;
         frameIndex: number;
         frameCount: number;
-        update(context: Engine.IUpdateContext): void;
+        update(context: IUpdateContext): void;
         draw(graphics: CanvasRenderingContext2D, position: IPoint, size: ISize): void;
     }
 
     export interface IAnimationCollection extends INamedCollection<IAnimation> {
     }
 
-    export interface ISprite extends ISolidScalableMovableThing {
+    export interface ICamera extends IMovableThing {
+        viewPortPosition: IPoint;
+        viewPortSize: ISize;
+        scale: number;
+        draw(graphics: CanvasRenderingContext2D, drawables: Array<any>): void;
+    }
+
+    export interface ISprite extends ISolidScalableMovableThing, IDrawable {
         animations: IAnimationCollection;
         currentAnimationKey: string;
     }
@@ -93,10 +103,22 @@ module Engine {
 
     class Utilities {
         static collisionDetection(a: IThing, b: IThing): boolean {
-            return a.position.x <= (b.position.x + b.size.width)
-                && b.position.x <= (a.position.x + a.size.width)
-                && a.position.y <= (b.position.y + b.size.height)
-                && b.position.y <= (a.position.y + a.size.height);
+            return Utilities.intersect(
+                a.position.x, a.position.y, a.size.width, a.size.height,
+                b.position.x, b.position.y, b.size.width, b.size.height);
+        }
+
+        static isVisibleInCamera(cam: ICamera, thg: IThing): boolean {
+            return Utilities.intersect(
+                cam.viewPortPosition.x, cam.viewPortPosition.y, cam.viewPortSize.width, cam.viewPortSize.height,
+                thg.position.x, thg.position.y, thg.size.width, thg.size.height);
+        }
+
+        static intersect(x1: number, y1: number, w1: number, h1: number, x2: number, y2: number, w2: number, h2: number) : boolean {
+            return x1 <= (x2 + w2)
+                && x2 <= (x1 + w1)
+                && y1 <= (y2 + h2)
+                && y2 <= (y1 + h1);
         }
 
         static calculateStep(from: number, to: number, delta: number): number {
@@ -217,12 +239,9 @@ module Engine {
 
             var image = <HTMLImageElement>document.createElement("img");
             var img = new Image();
-            var self = this;
-            img.onload = ev => { image.width = img.width; image.height = img.height; (<any>image).innerImage = img; self.filesLoaded++; };
+            img.onload = ev => { image.width = img.width; image.height = img.height; (<any>image).innerImage = img; this.filesLoaded++; };
             image.src = imageSource;
             img.src = imageSource;
-
-            this.filesLoaded++;
 
             this.images.add(id, image);
         }
@@ -231,11 +250,9 @@ module Engine {
             this.filesToLoad++;
 
             var audio = <HTMLAudioElement>document.createElement("audio");
-            var self = this;
-            try {
-                audio.src = audioSource;
-                this.filesLoaded++;
-            } catch (ex) { this.filesLoaded++; }
+            audio.onload = ev => { this.filesLoaded++; }; // It doesn't works!
+            audio.addEventListener('canplaythrough', ev => { this.filesLoaded++; }, false); // It works!!
+            audio.src = audioSource;
 
             this.audios.add(id, audio);
         }
@@ -277,10 +294,6 @@ module Engine {
         }
 
         update(context: IUpdateContext) {
-
-        }
-
-        draw(graphics: any): void {
 
         }
     }
@@ -362,6 +375,33 @@ module Engine {
         }
     }
 
+    export class Camera extends MovableThing implements ICamera {
+        public viewPortPosition: IPoint;
+        public viewPortSize: ISize;
+        public scale: number;
+
+        constructor(id: string);
+        constructor(id: string, position: IPoint, size: ISize);
+        constructor(id: string, position: IPoint, size: ISize, vpPosition: IPoint, vpSize: ISize);
+        constructor(id: string, position?: any, size?: any, vpPosition?: any, vpSize?: any) {
+            super(id, position, size);
+            this.viewPortPosition = vpPosition || new Point(0, 0);
+            this.viewPortSize = vpSize || new Size(0, 0);
+            this.scale = 1.0;
+        }
+
+        public draw(graphics: CanvasRenderingContext2D, drawables: Array<any>) {
+            for (var i: number = 0; i < drawables.length; i++) {
+                if (Utilities.isVisibleInCamera(this, drawables[i])) {
+                    if (drawables[i].draw) {
+                        var drawable: IDrawable = <IDrawable>drawables[i];
+                        drawable.draw(graphics, this);
+                    }
+                }
+            }
+        }
+    }
+
     export class StaticImageAnimation implements IAnimation {
         public id: string;
         public frameIndex: number;
@@ -376,7 +416,7 @@ module Engine {
             this.frameCount = 1;
         }
 
-        public update(context: Engine.IUpdateContext): void {
+        public update(context: IUpdateContext): void {
         }
 
         public draw(graphics: CanvasRenderingContext2D, position: IPoint, size: ISize): void {
@@ -420,7 +460,7 @@ module Engine {
             this.imageSize = new Size(w, h);
         }
 
-        public update(context: Engine.IUpdateContext): void {
+        public update(context: IUpdateContext): void {
             super.update(context);
             this.ticks += context.ticks;
             if (this.ticks / (100 - this.speed) >= 1) {
@@ -466,7 +506,7 @@ module Engine {
             this.imageSize = new Size(w, h);
         }
 
-        public update(context: Engine.IUpdateContext): void {
+        public update(context: IUpdateContext): void {
             super.update(context);
             var delta = context.ticks / (100 - this.speed);
             this.offset += delta;
@@ -513,6 +553,36 @@ module Engine {
         }
     }
 
+    export class TextAnimation implements IAnimation {
+        public id: string;
+        public text: string;
+        public color: string;
+        public font: string;
+        public frameIndex: number;
+        public frameCount: number;
+
+        constructor(id: string, text: string, color: string, font?: string) {
+            this.id = id;
+            this.frameCount = 0;
+            this.frameIndex = 0;
+            this.text = text;
+            this.font = font;
+        }
+
+        public update(context: IUpdateContext): void {
+        }
+
+        public draw(graphics: CanvasRenderingContext2D, position: IPoint, size: ISize): void {
+            graphics.save();
+            if (this.font)
+                graphics.font = this.font;
+
+            graphics.fillStyle = this.color;
+            graphics.fillText(this.text, position.x, position.y);
+            graphics.restore();
+        }
+    }
+
     export class AnimationCollection extends NamedCollection<IAnimation> implements IAnimationCollection {
     }
 
@@ -546,7 +616,7 @@ module Engine {
             return this.animations.get(this.currentKey);
         }
 
-        update(context: Engine.IUpdateContext) {
+        update(context: IUpdateContext) {
             super.update(context);
 
             var currentAnimation = this.currentAnimation;
@@ -555,12 +625,15 @@ module Engine {
             }
         }
 
-        draw(graphics: CanvasRenderingContext2D) {
-            super.draw(graphics);
-
+        draw(graphics: CanvasRenderingContext2D, camera: ICamera) {
             var currentAnimation = this.currentAnimation;
             if (currentAnimation) {
-                currentAnimation.draw(graphics, this.position, this.size);
+                var x: number = (this.position.x + camera.position.x - camera.viewPortPosition.x) * camera.scale;
+                var y: number = (this.position.y + camera.position.y - camera.viewPortPosition.y) * camera.scale;
+                var w: number = this.size.width * camera.scale;
+                var h: number = this.size.height * camera.scale;
+                
+                currentAnimation.draw(graphics, new Point(x, y), new Size(w, h));
             }
         }
     }
@@ -569,6 +642,7 @@ module Engine {
 
         public resources: IResources;
         public things: Array<IThing>;
+        public cameras: Array<ICamera>;
         private graphics: CanvasRenderingContext2D;
         private canvas: HTMLCanvasElement;
         private fps: number;
@@ -579,6 +653,7 @@ module Engine {
             this.canvas = canvas;
             this.graphics = canvas.getContext('2d');
             this.things = [];
+            this.cameras = [new Camera('default', new Point(0, 0), new Size(canvas.width, canvas.height), new Point(0, 0), new Size(canvas.width, canvas.height))];
             this.resources = new Resources();
         }
 
@@ -620,9 +695,12 @@ module Engine {
         }
 
         updateElements(context: IUpdateContext): void {
-            this.things.forEach(thing => {
-                thing.update(context);
-                thing.draw(this.graphics);
+            this.things.forEach(sprite => {
+                sprite.update(context);
+            });
+            this.cameras.forEach(camera => {
+                camera.update(context);
+                camera.draw(this.graphics, this.things);
             });
         }
     }

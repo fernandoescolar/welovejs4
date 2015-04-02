@@ -1,35 +1,20 @@
-///<reference path='Engine.ts'/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+///<reference path='Engine.ts'/>
 var ShooterScenario = (function (_super) {
     __extends(ShooterScenario, _super);
-    function ShooterScenario(canvas) {
+    function ShooterScenario(canvas, pad) {
         var _this = this;
         _super.call(this, canvas);
 
-        this.pad = new Pad();
+        this.pad = pad;
         this.pad.onfire = function () {
             _this.shoot();
         };
-
-        this.resources.loadImage('background', 'images/farback.gif');
-        this.resources.loadImage('background-paralax', 'images/starfield.png');
-        this.resources.loadImage('player', 'images/Ship.64x29.png');
-        this.resources.loadImage('enemy', 'images/enemy.40x30.png');
-        this.resources.loadImage('shot', 'images/shot.png');
-        this.resources.loadImage('explosion', 'images/explosion.png');
-
-        this.resources.loadAudio('background-music', 'sound/spankmonkey.mp3');
-        this.resources.loadAudio('laser', 'sound/laser.mp3');
-        this.resources.loadAudio('explosion', 'sound/explosion.mp3');
-
-        this.resources.preload(function () {
-            _this.start(60);
-        });
     }
     ShooterScenario.prototype.start = function (framesPerSecond) {
         var _this = this;
@@ -40,92 +25,104 @@ var ShooterScenario = (function (_super) {
         this.enemies = [];
         this.explosions = [];
         this.enemyCounter = 0;
+        this.removedEnemyCounter = 0;
 
-        this.createBackground('background', 30);
-        this.createBackground('background-paralax', 50);
-        this.player = this.createPlayer(10, 10);
+        var bg = this.createBackground(30);
+        if (bg)
+            this.things.push(bg);
+
+        this.score = this.createScore();
+        this.player = this.createPlayer(20, 100);
+        if (this.player)
+            this.things.push(this.player);
 
         this.resources.playAudio('background-music');
 
         setTimeout(function () {
-            _this.createEnemy();
+            _this.addEnemy();
         }, Math.random() * 2000);
     };
 
-    ShooterScenario.prototype.createBackground = function (imgName, speed) {
-        var animation = new Engine.ContinuousImageAnimation(imgName, this.resources.images.get(imgName));
-        var sprite = new Engine.Sprite(imgName, animation);
-        sprite.position.x = 0;
-        sprite.position.y = 0;
-        sprite.size.width = 950;
-        sprite.size.height = 600;
-        animation.speed = speed;
+    ShooterScenario.prototype.createBackground = function (speed) {
+        return null;
+    };
 
-        this.things.push(sprite);
+    ShooterScenario.prototype.createScore = function () {
+        return null;
     };
 
     ShooterScenario.prototype.createPlayer = function (x, y) {
-        var animation = new Engine.ImageSheetAnimation('player', this.resources.images.get('player'), 4, true, true);
-        var sprite = new Engine.Sprite('player', animation);
-        sprite.position.x = x || Math.random() * 900;
-        sprite.position.y = y || Math.random() * 550;
-        sprite.size.width = 64;
-        sprite.size.height = 29;
-        sprite.speed = 95;
-        animation.speed = 10;
-
-        this.things.push(sprite);
-        return sprite;
+        return null;
     };
 
     ShooterScenario.prototype.createEnemy = function () {
+        return null;
+    };
+
+    ShooterScenario.prototype.createShot = function () {
+        return null;
+    };
+
+    ShooterScenario.prototype.createExplosion = function () {
+        return null;
+    };
+
+    ShooterScenario.prototype.addEnemy = function () {
         var _this = this;
         setTimeout(function () {
-            _this.createEnemy();
+            _this.addEnemy();
         }, Math.random() * 3000);
+        var enemy = this.createEnemy();
+        if (enemy) {
+            enemy.position.x = 950 + Math.random() * 40;
+            enemy.position.y = Math.random() * 500;
 
-        var animation = new Engine.ImageSheetAnimation('enemy', this.resources.images.get('enemy'), 6, true, true);
-        var sprite = new Engine.Sprite('enemy-' + this.enemyCounter, animation);
-        sprite.position.x = 950 + Math.random() * 40;
-        sprite.position.y = Math.random() * 500;
-        sprite.size.width = 40;
-        sprite.size.height = 30;
-        sprite.speed = Math.random() * 50 + 40;
-        animation.speed = sprite.speed;
+            enemy.speed = Math.random() * 50 + 40;
 
-        this.enemies.push(sprite);
-        this.things.push(sprite);
-        return sprite;
+            this.enemies.push(enemy);
+            this.things.push(enemy);
+        }
     };
 
     ShooterScenario.prototype.shoot = function () {
-        var animation = new Engine.ImageSheetAnimation('shot', this.resources.images.get('shot'), 4, true, true);
-        var sprite = new Engine.Sprite('shot', animation);
-        sprite.position.x = this.player.position.x + 60;
-        sprite.position.y = this.player.position.y + 7;
-        sprite.size.width = 16;
-        sprite.size.height = 16;
-        sprite.speed = 100;
-
-        this.shots.push(sprite);
-        this.things.push(sprite);
+        var shot = this.createShot();
+        if (shot) {
+            this.shots.push(shot);
+            this.things.push(shot);
+        }
 
         this.resources.playAudio('laser');
     };
 
     ShooterScenario.prototype.explote = function (x, y) {
-        var animation = new Engine.ImageSheetAnimation('explosion', this.resources.images.get('explosion'), 64, false, true);
-        var sprite = new Engine.Sprite('explosion', animation);
-        sprite.position.x = x;
-        sprite.position.y = y;
-        sprite.size.width = 60;
-        sprite.size.height = 60;
-        animation.speed = 80;
+        var sprite = this.createExplosion();
+        if (sprite) {
+            sprite.position.x = x;
+            sprite.position.y = y;
 
-        this.explosions.push(sprite);
-        this.things.push(sprite);
+            this.explosions.push(sprite);
+            this.things.push(sprite);
+        }
 
         this.resources.playAudio('explosion');
+    };
+
+    ShooterScenario.prototype.deleteEnemy = function (enemy, index) {
+        var indez = this.things.indexOf(enemy);
+        this.enemies.splice(index, 1);
+        this.things.splice(indez, 1);
+    };
+
+    ShooterScenario.prototype.deleteShot = function (shot, index) {
+        var indez = this.things.indexOf(shot);
+        this.shots.splice(index, 1);
+        this.things.splice(indez, 1);
+    };
+
+    ShooterScenario.prototype.deleteExplosion = function (explosion, index) {
+        var indez = this.things.indexOf(explosion);
+        this.explosions.splice(index, 1);
+        this.things.splice(indez, 1);
     };
 
     ShooterScenario.prototype.update = function (ticks) {
@@ -134,94 +131,82 @@ var ShooterScenario = (function (_super) {
     };
 
     ShooterScenario.prototype.updateGame = function () {
+        this.updateScore();
         this.updateShots();
         this.updateEnemies();
         this.updateExplosions();
         this.updateCollisions();
-        this.updatePlayer();
+    };
+
+    ShooterScenario.prototype.updateScore = function () {
+        var score = this.removedEnemyCounter * 11 - Shot.counter;
+        score = score < 0 ? 0 : score;
+        this.score.text = "Score: " + score;
     };
 
     ShooterScenario.prototype.updateShots = function () {
         var _this = this;
-        var toDelete = [];
-
-        this.shots.forEach(function (shot) {
-            shot.move(new Engine.Point(shot.position.x + 30, shot.position.y));
-            if (shot.position.x >= 950) {
-                toDelete.push(shot);
+        this.shots.forEach(function (shot, index) {
+            if (shot.shouldDelete) {
+                _this.deleteShot(shot, index);
             }
-        });
-
-        toDelete.forEach(function (shot) {
-            var index = _this.shots.indexOf(shot);
-            var indez = _this.things.indexOf(shot);
-            _this.shots.splice(index, 1);
-            _this.things.splice(indez, 1);
         });
     };
 
     ShooterScenario.prototype.updateExplosions = function () {
         var _this = this;
-        var toDelete = [];
-
-        this.explosions.forEach(function (explosion) {
+        this.explosions.forEach(function (explosion, index) {
             var sprite = explosion;
             var animation = sprite.currentAnimation;
             if (animation.hasEnd) {
-                toDelete.push(explosion);
+                _this.deleteExplosion(explosion, index);
             }
-        });
-
-        toDelete.forEach(function (explosion) {
-            var index = _this.explosions.indexOf(explosion);
-            var indez = _this.things.indexOf(explosion);
-            _this.explosions.splice(index, 1);
-            _this.things.splice(indez, 1);
         });
     };
 
     ShooterScenario.prototype.updateEnemies = function () {
         var _this = this;
-        var toDelete = [];
-        this.enemies.forEach(function (enemy) {
+        this.enemies.forEach(function (enemy, index) {
             enemy.move(new Engine.Point(enemy.position.x - Math.random() * 40, enemy.position.y));
             if (enemy.position.x <= -20) {
-                toDelete.push(enemy);
+                _this.deleteEnemy(enemy, index);
             }
-        });
-
-        toDelete.forEach(function (enemy) {
-            var index = _this.enemies.indexOf(enemy);
-            var indez = _this.things.indexOf(enemy);
-            _this.enemies.splice(index, 1);
-            _this.things.splice(indez, 1);
         });
     };
 
     ShooterScenario.prototype.updateCollisions = function () {
         var _this = this;
-        this.shots.forEach(function (shot) {
-            _this.enemies.forEach(function (enemy) {
-                if (shot.collision(enemy)) {
-                    var sindex = _this.shots.indexOf(shot);
-                    var sindez = _this.things.indexOf(shot);
-                    _this.shots.splice(sindex, 1);
-                    _this.things.splice(sindez, 1);
-
-                    var eindex = _this.enemies.indexOf(enemy);
-                    var eindez = _this.things.indexOf(enemy);
-                    _this.enemies.splice(eindex, 1);
-                    _this.things.splice(eindez, 1);
-
+        this.shots.forEach(function (shot, sindex) {
+            _this.enemies.forEach(function (enemy, eindex) {
+                if (shot.collision(enemy) && !shot.shouldDelete) {
+                    shot.shouldDelete = true;
+                    _this.deleteShot(shot, sindex);
+                    _this.deleteEnemy(enemy, eindex);
                     _this.explote(enemy.position.x - 10, enemy.position.y - 10);
+                    _this.removedEnemyCounter++;
                 }
             });
         });
     };
+    return ShooterScenario;
+})(Engine.Scenario);
 
-    ShooterScenario.prototype.updatePlayer = function () {
-        var x = this.player.position.x;
-        var y = this.player.position.y;
+var Player = (function (_super) {
+    __extends(Player, _super);
+    function Player(pad, animation) {
+        _super.call(this, "player", animation);
+
+        this.pad = pad;
+        this.speed = 95;
+    }
+    Player.prototype.update = function (context) {
+        _super.prototype.update.call(this, context);
+        this.updatePosition();
+    };
+
+    Player.prototype.updatePosition = function () {
+        var x = this.position.x;
+        var y = this.position.y;
         if (this.pad.up) {
             y -= 30;
         }
@@ -238,10 +223,34 @@ var ShooterScenario = (function (_super) {
             x -= 30;
         }
 
-        this.player.move(new Engine.Point(x, y));
+        this.move(new Engine.Point(x, y));
     };
-    return ShooterScenario;
-})(Engine.Scenario);
+    return Player;
+})(Engine.Sprite);
+
+var Shot = (function (_super) {
+    __extends(Shot, _super);
+    function Shot(maxWidth, animation) {
+        _super.call(this, "shoot-" + (Shot.counter++), animation);
+
+        this.shouldDelete = false;
+        this.speed = 100;
+        this.maxWidth = maxWidth;
+    }
+    Shot.prototype.update = function (context) {
+        this.updatePosition();
+        _super.prototype.update.call(this, context);
+    };
+
+    Shot.prototype.updatePosition = function () {
+        this.move(new Engine.Point(this.position.x + 30, this.position.y));
+        if (this.position.x >= this.maxWidth) {
+            this.shouldDelete = true;
+        }
+    };
+    Shot.counter = 0;
+    return Shot;
+})(Engine.Sprite);
 
 var Pad = (function () {
     function Pad() {

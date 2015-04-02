@@ -1,31 +1,20 @@
 ///<reference path='Engine.ts'/>
-
 class ShooterScenario extends Engine.Scenario { 
-    private pad: Pad;
-    private player: Engine.ISolidScalableMovableThing;
-    private shots: Array<Engine.ISolidScalableMovableThing>;
-    private enemies: Array<Engine.ISolidScalableMovableThing>;
-    private explosions: Array<Engine.ISolidScalableMovableThing>;
-    private enemyCounter: number;
+    private score: Engine.TextAnimation;
+    private removedEnemyCounter: number;
 
-    constructor(canvas: HTMLCanvasElement) {
+    public pad: IPad;
+    public player: Player;
+    public shots: Array<Shot>;
+    public enemies: Array<Engine.ISprite>;
+    public explosions: Array<Engine.ISprite>;
+    public enemyCounter: number;
+
+    constructor(canvas: HTMLCanvasElement, pad: IPad) {
         super(canvas);
 
-        this.pad = new Pad();
+        this.pad = pad;
         this.pad.onfire = () => { this.shoot(); };
-
-        this.resources.loadImage('background', 'images/farback.gif');
-        this.resources.loadImage('background-paralax', 'images/starfield.png');
-        this.resources.loadImage('player', 'images/Ship.64x29.png');
-        this.resources.loadImage('enemy', 'images/enemy.40x30.png');
-        this.resources.loadImage('shot', 'images/shot.png');
-        this.resources.loadImage('explosion', 'images/explosion.png');
-
-        this.resources.loadAudio('background-music', 'sound/spankmonkey.mp3');
-        this.resources.loadAudio('laser', 'sound/laser.mp3');
-        this.resources.loadAudio('explosion', 'sound/explosion.mp3');
-
-        this.resources.preload(() => { this.start(60); });
     }
 
     start(framesPerSecond: number) : void { 
@@ -36,87 +25,97 @@ class ShooterScenario extends Engine.Scenario {
         this.enemies = [];
         this.explosions = [];
         this.enemyCounter = 0;
+        this.removedEnemyCounter = 0;
 
-        this.createBackground('background', 30);
-        this.createBackground('background-paralax', 50);
-        this.player = this.createPlayer(10, 10);
-        
+        var bg = this.createBackground(30);
+        if (bg) this.things.push(bg);
+
+        this.score = this.createScore();
+        this.player = this.createPlayer(20, 100);
+        if (this.player) this.things.push(this.player);
+
         this.resources.playAudio('background-music');
 
-        setTimeout(() => { this.createEnemy(); }, Math.random() * 2000);
+        setTimeout(() => { this.addEnemy(); }, Math.random() * 2000);
     }
 
-    createBackground(imgName: string, speed: number): void {
-        var animation = new Engine.ContinuousImageAnimation(imgName, this.resources.images.get(imgName));
-        var sprite = new Engine.Sprite(imgName, animation);
-        sprite.position.x = 0;
-        sprite.position.y = 0;
-        sprite.size.width = 950 ;
-        sprite.size.height = 600;
-        animation.speed = speed;
-
-        this.things.push(sprite);
+    createBackground(speed: number): Engine.Sprite {
+        return null;
     }
 
-    createPlayer(x?: number, y?: number): Engine.ISprite { 
-        var animation = new Engine.ImageSheetAnimation('player', this.resources.images.get('player'), 4, true, true);
-        var sprite = new Engine.Sprite('player', animation);
-        sprite.position.x = x || Math.random() * 900;
-        sprite.position.y = y || Math.random() * 550;
-        sprite.size.width = 64;
-        sprite.size.height = 29;
-        sprite.speed = 95;
-        animation.speed = 10;
-
-        this.things.push(sprite);
-        return sprite;
+    createScore(): Engine.TextAnimation {
+        return null;
     }
 
-    createEnemy() {
-        setTimeout(() => { this.createEnemy(); }, Math.random() * 3000);
+    createPlayer(x?: number, y?: number): Player { 
+        return null;
+    }
 
-        var animation = new Engine.ImageSheetAnimation('enemy', this.resources.images.get('enemy'), 6, true, true);
-        var sprite = new Engine.Sprite('enemy-' + this.enemyCounter, animation);
-        sprite.position.x = 950 + Math.random() * 40;
-        sprite.position.y = Math.random() * 500;
-        sprite.size.width = 40;
-        sprite.size.height = 30;
-        sprite.speed = Math.random() * 50 + 40;
-        animation.speed = sprite.speed;
+    createEnemy(): Engine.Sprite {
+        return null;
+    }
 
-        this.enemies.push(sprite);
-        this.things.push(sprite);
-        return sprite;
+    createShot() : Shot {
+        return null;
+    }
+
+    createExplosion(): Engine.Sprite {
+        return null;
+    }
+
+    addEnemy() {
+        setTimeout(() => { this.addEnemy(); }, Math.random() * 3000);
+        var enemy = this.createEnemy();
+        if (enemy) {
+            enemy.position.x = 950 + Math.random() * 40;
+            enemy.position.y = Math.random() * 500;
+            
+            enemy.speed = Math.random() * 50 + 40;
+
+            this.enemies.push(enemy);
+            this.things.push(enemy);
+        }
     }
 
     shoot(): void {
-        var animation = new Engine.ImageSheetAnimation('shot', this.resources.images.get('shot'), 4, true, true);
-        var sprite = new Engine.Sprite('shot', animation);
-        sprite.position.x = this.player.position.x + 60;
-        sprite.position.y = this.player.position.y + 7;
-        sprite.size.width = 16;
-        sprite.size.height = 16;
-        sprite.speed = 100;
-
-        this.shots.push(sprite);
-        this.things.push(sprite);
+        var shot = this.createShot();
+        if (shot) {
+            this.shots.push(shot);
+            this.things.push(shot);
+        }
 
         this.resources.playAudio('laser');
     }
 
     explote(x: number, y: number) {
-        var animation = new Engine.ImageSheetAnimation('explosion', this.resources.images.get('explosion'), 64, false, true);
-        var sprite = new Engine.Sprite('explosion', animation);
-        sprite.position.x = x;
-        sprite.position.y = y;
-        sprite.size.width = 60;
-        sprite.size.height = 60;
-        animation.speed = 80;
+        var sprite = this.createExplosion();
+        if (sprite) {
+            sprite.position.x = x;
+            sprite.position.y = y;
 
-        this.explosions.push(sprite);
-        this.things.push(sprite);
+            this.explosions.push(sprite);
+            this.things.push(sprite);
+        }
 
         this.resources.playAudio('explosion');
+    }
+
+    deleteEnemy(enemy: Engine.ISprite, index: number) {
+        var indez: number = this.things.indexOf(enemy);
+        this.enemies.splice(index, 1);
+        this.things.splice(indez, 1);
+    }
+
+    deleteShot(shot:Shot, index: number) {
+        var indez: number = this.things.indexOf(shot);
+        this.shots.splice(index, 1);
+        this.things.splice(indez, 1);
+    }
+
+    deleteExplosion(explosion: Engine.ISprite, index: number) {
+        var indez: number = this.things.indexOf(explosion);
+        this.explosions.splice(index, 1);
+        this.things.splice(indez, 1);
     }
 
     update(): void;
@@ -127,91 +126,79 @@ class ShooterScenario extends Engine.Scenario {
     }
 
     updateGame(): void {
-
+        this.updateScore();
         this.updateShots();
         this.updateEnemies();
         this.updateExplosions();
         this.updateCollisions();
-        this.updatePlayer();
+    }
+
+    updateScore(): void {
+        var score = this.removedEnemyCounter * 11 - Shot.counter;
+        score = score < 0 ? 0 : score;
+        this.score.text = "Score: " + score;
     }
 
     updateShots(): void {
-        var toDelete: Array<Engine.ISolidScalableMovableThing> = [];
-
-        this.shots.forEach(shot => {
-            shot.move(new Engine.Point(shot.position.x + 30, shot.position.y));
-            if (shot.position.x >= 950) {
-                toDelete.push(shot);
+        this.shots.forEach((shot, index) => {
+            if (shot.shouldDelete) {
+                this.deleteShot(shot, index);
             }
-        });
-
-        toDelete.forEach(shot => {
-            var index: number = this.shots.indexOf(shot);
-            var indez: number = this.things.indexOf(shot);
-            this.shots.splice(index, 1);
-            this.things.splice(indez, 1);
         });
     }
 
     updateExplosions(): void {
-        var toDelete: Array<Engine.ISolidScalableMovableThing> = [];
-
-        this.explosions.forEach(explosion => {
+        this.explosions.forEach((explosion, index) => {
             var sprite = <Engine.Sprite>explosion;
             var animation = <Engine.ImageSheetAnimation>sprite.currentAnimation;
             if (animation.hasEnd) {
-                toDelete.push(explosion);
+                this.deleteExplosion(explosion, index);
             }
-        });
-
-        toDelete.forEach(explosion => {
-            var index: number = this.explosions.indexOf(explosion);
-            var indez: number = this.things.indexOf(explosion);
-            this.explosions.splice(index, 1);
-            this.things.splice(indez, 1);
         });
     }
 
     updateEnemies(): void {
-        var toDelete: Array<Engine.ISolidScalableMovableThing> = [];
-        this.enemies.forEach(enemy => {
+        this.enemies.forEach((enemy, index) => {
             enemy.move(new Engine.Point(enemy.position.x - Math.random() * 40, enemy.position.y));
             if (enemy.position.x <= -20) {
-                toDelete.push(enemy);
+                this.deleteEnemy(enemy, index);
             }
-        });
-
-        toDelete.forEach(enemy => {
-            var index: number = this.enemies.indexOf(enemy);
-            var indez: number = this.things.indexOf(enemy);
-            this.enemies.splice(index, 1);
-            this.things.splice(indez, 1);
         });
     }
 
     updateCollisions(): void {
-        this.shots.forEach(shot => {
-            this.enemies.forEach(enemy => {
-                if (shot.collision(enemy)) {
-                    var sindex: number = this.shots.indexOf(shot);
-                    var sindez: number = this.things.indexOf(shot);
-                    this.shots.splice(sindex, 1);
-                    this.things.splice(sindez, 1);
-
-                    var eindex: number = this.enemies.indexOf(enemy);
-                    var eindez: number = this.things.indexOf(enemy);
-                    this.enemies.splice(eindex, 1);
-                    this.things.splice(eindez, 1);
-
+        this.shots.forEach((shot, sindex) => {
+            this.enemies.forEach((enemy, eindex) => {
+                if (shot.collision(enemy) && !shot.shouldDelete) {
+                    shot.shouldDelete = true;
+                    this.deleteShot(shot, sindex);
+                    this.deleteEnemy(enemy, eindex);
                     this.explote(enemy.position.x - 10, enemy.position.y - 10);
+                    this.removedEnemyCounter++;
                 }
             });
         });
     }
+}
 
-    updatePlayer() : void {
-        var x: number = this.player.position.x;
-        var y: number = this.player.position.y;
+class Player extends Engine.Sprite {
+    private pad: IPad;
+
+    constructor(pad: IPad, animation: Engine.IAnimation) {
+        super("player", animation);
+
+        this.pad = pad;
+        this.speed = 95;
+    }
+
+    public update(context: Engine.IUpdateContext) {
+        super.update(context);
+        this.updatePosition();
+    }
+
+    private updatePosition(): void {
+        var x: number = this.position.x;
+        var y: number = this.position.y;
         if (this.pad.up) {
             y -= 30;
         }
@@ -228,11 +215,48 @@ class ShooterScenario extends Engine.Scenario {
             x -= 30;
         }
 
-        this.player.move(new Engine.Point(x, y));
+        this.move(new Engine.Point(x, y));
     }
 }
 
-class Pad {
+class Shot extends Engine.Sprite {
+    public static counter: number = 0;
+
+    public shouldDelete: boolean;
+    private maxWidth: number;
+
+    constructor(maxWidth: number, animation: Engine.IAnimation) {
+        super("shoot-" + (Shot.counter++), animation);
+
+        this.shouldDelete = false;
+        this.speed = 100;
+        this.maxWidth = maxWidth;
+    }
+
+    public update(context: Engine.IUpdateContext) {
+        this.updatePosition();
+        super.update(context);
+    }
+
+    private updatePosition(): void {
+        this.move(new Engine.Point(this.position.x + 30, this.position.y));
+        if (this.position.x >= this.maxWidth) {
+            this.shouldDelete = true;
+        }
+        
+    }
+}
+
+interface IPad {
+    up: boolean;
+    down: boolean;
+    left: boolean;
+    rigth: boolean;
+    space: boolean;
+    onfire: () => void;
+}
+
+class Pad implements IPad {
     public up: boolean;
     public down: boolean;
     public left: boolean;
@@ -299,5 +323,4 @@ class Pad {
 
         return false;
     }
-
 }

@@ -64,11 +64,10 @@ var HarlemLittleShaker = (function (_super) {
         }
     };
 
-    HarlemLittleShaker.prototype.draw = function (graphics) {
-        _super.prototype.draw.call(this, graphics);
-
+    HarlemLittleShaker.prototype.draw = function (graphics, camera) {
+        //super.draw(graphics, camera);
         graphics.drawImage(this.image, 0, 0, 42, 42, this.position.x, this.position.y, this.size.width, this.size.height);
     };
     return HarlemLittleShaker;
-})(Engine.ScalableThing);
+})(Engine.Sprite);
 //# sourceMappingURL=HarlemShake.js.map

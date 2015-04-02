@@ -10,7 +10,15 @@ var Engine;
         function Utilities() {
         }
         Utilities.collisionDetection = function (a, b) {
-            return a.position.x <= (b.position.x + b.size.width) && b.position.x <= (a.position.x + a.size.width) && a.position.y <= (b.position.y + b.size.height) && b.position.y <= (a.position.y + a.size.height);
+            return Utilities.intersect(a.position.x, a.position.y, a.size.width, a.size.height, b.position.x, b.position.y, b.size.width, b.size.height);
+        };
+
+        Utilities.isVisibleInCamera = function (cam, thg) {
+            return Utilities.intersect(cam.viewPortPosition.x, cam.viewPortPosition.y, cam.viewPortSize.width, cam.viewPortSize.height, thg.position.x, thg.position.y, thg.size.width, thg.size.height);
+        };
+
+        Utilities.intersect = function (x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x1 <= (x2 + w2) && x2 <= (x1 + w1) && y1 <= (y2 + h2) && y2 <= (y1 + h1);
         };
 
         Utilities.calculateStep = function (from, to, delta) {
@@ -123,36 +131,35 @@ var Engine;
             this.filesToLoad = 0;
         }
         Resources.prototype.loadImage = function (id, imageSource) {
+            var _this = this;
             this.filesToLoad++;
 
             var image = document.createElement("img");
             var img = new Image();
-            var self = this;
             img.onload = function (ev) {
                 image.width = img.width;
                 image.height = img.height;
                 image.innerImage = img;
-                self.filesLoaded++;
+                _this.filesLoaded++;
             };
             image.src = imageSource;
             img.src = imageSource;
-
-            this.filesLoaded++;
 
             this.images.add(id, image);
         };
 
         Resources.prototype.loadAudio = function (id, audioSource) {
+            var _this = this;
             this.filesToLoad++;
 
             var audio = document.createElement("audio");
-            var self = this;
-            try  {
-                audio.src = audioSource;
-                this.filesLoaded++;
-            } catch (ex) {
-                this.filesLoaded++;
-            }
+            audio.onload = function (ev) {
+                _this.filesLoaded++;
+            }; // It doesn't works!
+            audio.addEventListener('canplaythrough', function (ev) {
+                _this.filesLoaded++;
+            }, false); // It works!!
+            audio.src = audioSource;
 
             this.audios.add(id, audio);
         };
@@ -198,9 +205,6 @@ var Engine;
             this.size = size || new Size(0, 0);
         }
         Thing.prototype.update = function (context) {
-        };
-
-        Thing.prototype.draw = function (graphics) {
         };
         return Thing;
     })();
@@ -300,6 +304,28 @@ var Engine;
     })(ScalableMovableThing);
     Engine.SolidScalableMovableThing = SolidScalableMovableThing;
 
+    var Camera = (function (_super) {
+        __extends(Camera, _super);
+        function Camera(id, position, size, vpPosition, vpSize) {
+            _super.call(this, id, position, size);
+            this.viewPortPosition = vpPosition || new Point(0, 0);
+            this.viewPortSize = vpSize || new Size(0, 0);
+            this.scale = 1.0;
+        }
+        Camera.prototype.draw = function (graphics, drawables) {
+            for (var i = 0; i < drawables.length; i++) {
+                if (Utilities.isVisibleInCamera(this, drawables[i])) {
+                    if (drawables[i].draw) {
+                        var drawable = drawables[i];
+                        drawable.draw(graphics, this);
+                    }
+                }
+            }
+        };
+        return Camera;
+    })(MovableThing);
+    Engine.Camera = Camera;
+
     var StaticImageAnimation = (function () {
         function StaticImageAnimation(id, image) {
             this.id = id;
@@ -396,6 +422,30 @@ var Engine;
     })(StaticImageAnimation);
     Engine.ContinuousImageAnimation = ContinuousImageAnimation;
 
+    var TextAnimation = (function () {
+        function TextAnimation(id, text, color, font) {
+            this.id = id;
+            this.frameCount = 0;
+            this.frameIndex = 0;
+            this.text = text;
+            this.font = font;
+        }
+        TextAnimation.prototype.update = function (context) {
+        };
+
+        TextAnimation.prototype.draw = function (graphics, position, size) {
+            graphics.save();
+            if (this.font)
+                graphics.font = this.font;
+
+            graphics.fillStyle = this.color;
+            graphics.fillText(this.text, position.x, position.y);
+            graphics.restore();
+        };
+        return TextAnimation;
+    })();
+    Engine.TextAnimation = TextAnimation;
+
     var AnimationCollection = (function (_super) {
         __extends(AnimationCollection, _super);
         function AnimationCollection() {
@@ -454,12 +504,15 @@ var Engine;
             }
         };
 
-        Sprite.prototype.draw = function (graphics) {
-            _super.prototype.draw.call(this, graphics);
-
+        Sprite.prototype.draw = function (graphics, camera) {
             var currentAnimation = this.currentAnimation;
             if (currentAnimation) {
-                currentAnimation.draw(graphics, this.position, this.size);
+                var x = (this.position.x + camera.position.x - camera.viewPortPosition.x) * camera.scale;
+                var y = (this.position.y + camera.position.y - camera.viewPortPosition.y) * camera.scale;
+                var w = this.size.width * camera.scale;
+                var h = this.size.height * camera.scale;
+
+                currentAnimation.draw(graphics, new Point(x, y), new Size(w, h));
             }
         };
         return Sprite;
@@ -471,6 +524,7 @@ var Engine;
             this.canvas = canvas;
             this.graphics = canvas.getContext('2d');
             this.things = [];
+            this.cameras = [new Camera('default', new Point(0, 0), new Size(canvas.width, canvas.height), new Point(0, 0), new Size(canvas.width, canvas.height))];
             this.resources = new Resources();
         }
         Scenario.prototype.start = function (framesPerSecond) {
@@ -511,9 +565,12 @@ var Engine;
 
         Scenario.prototype.updateElements = function (context) {
             var _this = this;
-            this.things.forEach(function (thing) {
-                thing.update(context);
-                thing.draw(_this.graphics);
+            this.things.forEach(function (sprite) {
+                sprite.update(context);
+            });
+            this.cameras.forEach(function (camera) {
+                camera.update(context);
+                camera.draw(_this.graphics, _this.things);
             });
         };
         return Scenario;
